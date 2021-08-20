@@ -1,0 +1,48 @@
+{
+   "name":"Secret List",
+   "description":"",
+   "renders":[
+      "application/json",
+      "text/html"
+   ],
+   "parses":[
+      "application/json",
+      "application/x-www-form-urlencoded",
+      "multipart/form-data"
+   ],
+   "actions":{
+      "POST":{
+         "id":{
+            "type":"integer",
+            "required":false,
+            "read_only":true,
+            "label":"ID"
+         },
+         "value":{
+            "type":"string",
+            "required":true,
+            "read_only":false,
+            "label":"Value",
+            "max_length":255
+         },
+         "owner":{
+            "type":"field",
+            "required":false,
+            "read_only":true,
+            "label":"Owner"
+         },
+         "last_updated":{
+            "type":"datetime",
+            "required":false,
+            "read_only":true,
+            "label":"Last updated"
+         },
+         "created":{
+            "type":"datetime",
+            "required":false,
+            "read_only":true,
+            "label":"Created"
+         }
+      }
+   }
+}
