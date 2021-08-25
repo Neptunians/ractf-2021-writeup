@@ -13,6 +13,8 @@ We finished in 16o place, with 6000 points solving:
 * 6 out of 8 Pwn
 * 1 out of 6 Stego
 
+![Web Challenges](img/ractf-web.png)
+
 # Secret Store: Server-side Exfiltration (Web)
 
 ```How many secrets could a secret store store if a store could store secrets? (300 points)```
