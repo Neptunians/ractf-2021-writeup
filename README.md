@@ -13,11 +13,11 @@ We finished in 16o place, with 6000 points solving:
 * 6 out of 8 Pwn
 * 1 out of 6 Stego
 
-## Secret Store: Server-side Exfiltration (Web)
+# Secret Store: Server-side Exfiltration (Web)
 
 ```How many secrets could a secret store store if a store could store secrets? (300 points)```
 
-### Understanding
+## Understanding
 
 We are presented with a Django App, with a login/registration, where we add a new user and have a very simple app to store secrets.
 
@@ -40,7 +40,7 @@ After posting, the secret appears for the logged user:
 
 ![Frontend](img/neptunian-secret.png)
 
-### Source
+## Source
 
 We are provided with the source-code, which is a [Django-REST](https://www.django-rest-framework.org/) API.
 
@@ -75,7 +75,7 @@ def home(request):
     return render(request, "home.html")
 ```
 
-#### Summary
+### Summary
 * The **home** view, which filters the secret ONLY FROM THE OWNER (shit!) and renders it using home.html. This is the screen we saw with the script earlier.
 * The **SecretViewSet** is responsible for configuring the the data for the API.
   * This is the most important piece of code for solving the challenge! (We'll come back here later)
@@ -131,19 +131,19 @@ And after running:
 ```
 
 I'm showing the real data of the challenge here, because it helps the analysis.
-We get all of the secrets, but we just don't receive the secret itself, only the metadata.
+We get all of the secrets metadata, but we just don't receive the secret value itself.
 
 If you look at the message with ID=1, you'll see it was created days before the CTF. It is most probably where our flag is but... it does not show the flag.
 
-### A lot of wrong ways
+## A lot of wrong ways
 
-Before understanding what to do, we tried a lot of stuff (without success):
+Before understanding what to do, we tried a lot of stuff, without success:
 * Abusing the Debug mode for recon: nothing we didn't already knew
 * Sending and receiving different Content-Types: there was some interesting behaviour here when trying to get HTML, but... no deal.
 * Changing the owner of the POST: but the permission was good enough to block it.
 * PUTing instead of POSTing: Bleh.
 
-### Finally, somewhere to go
+## Finally, somewhere to go
 
 We just kept studying more of the default behaviour of the REST-Framework and we found something really interesting: [the **ordering**](https://www.django-rest-framework.org/api-guide/filtering/):
 
@@ -169,14 +169,14 @@ By sending a query string **ordering=value**, we'll just get the values ordered 
 
 But... how the ordering can help us?
 
-In fact, for exfiltration purposes, small pieces of information like this may be enough to extract a lot of information. 
+In fact, for exfiltration purposes, small pieces of information like this may be enough to extract a lot of data. 
 I'll explain, but let's understand the ordering effect first.
 
 First of all: we know the flag format is **ractf{something}**. This helps us on proving our point. 
 
 If we send a secret "**q**", it must appear before the flag in an ordered query. If we send a secret "**s**", it must appear after the flag!
 
-It's just theory. Let's test it.
+It's just theory. Let's test it. 
 
 To avoid it bringing a lot of garbage from other players, better having a feature to filter only interesting IDs. Also, we are only interested in the IDs.
 
@@ -223,7 +223,7 @@ Great! Our flag, started with 'r', is between 'q' and 's' in an ordered query.
 
 But again: what is means? (I wont ask again!)
 
-### Searching for Flags
+## Searching for Flags
 
 Since we control the ordering, we can infer the next char of the flag. For example: if I send a secret **ractf{a**, and the real flag starts with **ractf{d**, my secret will be ordered before the flag. 
 If I send the flag **ractf{e**, my secret will appear after the flag.
@@ -253,11 +253,15 @@ Our brute-force strategy will be:
 4) Attach the found char on the flag
 5) If the char found is not "**}**" (end of flag), Go back to step 3
 
-### Coding time
+## Coding time
 
-Let's break the solution in some pieces.
+Let's break the solution in two pieces.
 
 1) The brute-forcing algorithm structure
+
+We have a main loop looking for the last char ('}') and a position-loop looking for the next char.
+
+The binary search algo is generic and receives a function reference, which returns True if the test was successful, and the binary search chooses which half of the search space to go next, until we only have only 1 possible char.
 
 ```python
 # ractf{a-zA-Z0-9_-}
@@ -343,7 +347,7 @@ def test_char(params):
     return all_secs.index(FLAG_SEC_ID) > all_secs.index(sec['id'])
 ```
 
-### Fire in the Hole!
+## Fire in the Hole!
 
 Now stop the bullshit and run the thing.
 
@@ -386,15 +390,15 @@ CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c66de47z
 CURRENT FLAG: ractf{data_exf1l_via_s0rt1ng_0c66de47z}
 ```
 
-Gotcha! :)
+Looks like your secrets are not that safe
 
 ```text
 ractf{data_exf1l_via_s0rt1ng_0c66de47z}
 ```
 
-### Follow the solution
+# Follow the solution
 
-If you want to follow the solution presented here, the code of the challenge and the Django app is [available in the repo](https://github.com/Neptunians/ractf-2021-writeup).
+If you want to follow the solution presented here, the source code of the challenge and the brute force app are [available in the repo](https://github.com/Neptunians/ractf-2021-writeup).
 
 1) Generate a secret key for the app
 
@@ -452,6 +456,12 @@ $ curl localhost:8000/
 The database in the repo already have the flag.
 If you wanna start with an empty DB, you should create the first user (admin?) and set the first secret to the flag.
 
+# Contact
+
+* Team: [FireShell](https://fireshellsecurity.team/)
+* Team Twitter: [@fireshellst](https://twitter.com/fireshellst)
+* Follow me too :) [@NeptunianHacks](twitter.com/NeptunianHacks)
+
 # References
 
 * CTF Time Event: https://ctftime.org/event/1354
@@ -459,9 +469,6 @@ If you wanna start with an empty DB, you should create the first user (admin?) a
 * CTF Discord: https://discord.gg/Rrhdvzn
 * Repo with the artifacts discussed here: https://github.com/Neptunians/ractf-2021-writeup
 * My Writeups on RACTF-2020 (Portuguese): https://neptunian.medium.com/really-awesome-ctf-quarentena-3f2d9095ee3d
-* Django-REST: https://www.django-rest-framework.org/
-* Django-REST Ordering and Filtering: https://www.django-rest-framework.org/api-guide/filtering/
+* Django-REST-Framwork: https://www.django-rest-framework.org/
+* Django-REST-Framework - Ordering and Filtering: https://www.django-rest-framework.org/api-guide/filtering/
 * Binary Search ALgorithm: https://en.wikipedia.org/wiki/Binary_search_algorithm
-* Team: [FireShell](https://fireshellsecurity.team/)
-* Team Twitter: [@fireshellst](https://twitter.com/fireshellst)
-* Follow me too :) [@NeptunianHacks](twitter.com/NeptunianHacks)
